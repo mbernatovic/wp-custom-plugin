@@ -1,0 +1,79 @@
+<?php
+$invalidForm = false;
+if(empty($form_atts["cm_list_name"])){
+    $invalidForm = true;
+    echo 'You did not provide cm_list_name';
+}
+if(empty($form_atts["form_id"])){
+    $invalidForm = true;
+    echo 'You did not provide form_id';
+}
+
+
+if(isset($form_atts["custom_template"]) && !empty($form_atts["custom_template"])){
+    $customTemplateEnabled= true;
+}
+else{
+    $customTemplateEnabled= false;
+}
+if(isset($form_atts["input_fields"])){
+    $field_form = '';
+    $input_fields = $form_atts["input_fields"];
+    $fields = explode(";", $input_fields);
+
+    foreach($fields as $field){
+        list($field_name,$field_type,$field_fname) = explode(",", $field);
+        
+        $field_form .='<div class="mc-field-group">
+        <label for="'. $field_name .'">'. $field_name .'</label>
+        <input type="'. $field_type .'" value="" name="'. $field_fname .'">
+    </div>';
+    }
+
+}
+?>
+
+<?php if(!$invalidForm) :?>
+    <?php if($customTemplateEnabled == true) :?>
+        <div class="container" id="<?php echo $form_atts['form_id']?>">
+            <form action="">
+                <?php echo $form_atts["custom_template"]; ?>
+            </form>
+        </div>
+    <?php else : ?>
+        <div class="container" id="<?php echo $form_atts['form_id']?>">
+            <form action="">
+                <?php echo $field_form; ?>
+            </form>
+        </div>
+    <?php endif;?>
+
+    <script>
+    jQuery(function () {
+    jQuery("form").validate();
+    });
+    jQuery( "form" ).on( "submit", function(e) {
+        e.preventDefault(); 
+        var dataString = jQuery(this).serialize();
+        var submit = jQuery(':input[type="submit"]');
+        submit.prop('disabled', true);
+        submit.val('Sending...')
+        jQuery.ajax({
+            method: 'POST',
+            dataType : "json",
+            data: {action: "obf_api_call", data: dataString },
+            url : '/wp-admin/admin-ajax.php',
+            success:function(result){
+                <?php if(isset($form_atts["return_message"]) && !empty($form_atts["return_message"])):?>
+                jQuery(#<?php echo $form_atts['form_id']?>).html("<div id='message'></div>");
+                jQuery('#message').html(<?php echo $form_atts['return_message']?>);
+                <?php endif; ?>
+            },
+            complete : function(){
+                submit.prop('disabled',false);
+            }
+        });
+        return false;
+    });
+    </script>
+<?php endif;?>
